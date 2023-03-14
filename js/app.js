@@ -1,15 +1,24 @@
-const loadPhones = async(searchText) => {
+const loadPhones = async(searchText, datalimit) => {
     const url = `https://openapi.programming-hero.com/api/phones?search=${searchText}`
     const res = await fetch(url);
     const data = await res.json();
-    displayPhones(data.data)
+    displayPhones(data.data, datalimit)
 }
 
-const displayPhones = phones => {
+const displayPhones = (phones, datalimit) => {
     const phonesContainer = document.getElementById('phones-container');
     phonesContainer.textContent = '';
     // display phones 10 only
-    phones = phones.slice(0, 10)
+    const showAll = document.getElementById('show-all');
+
+    if(datalimit && phones.length > 10){
+        phones = phones.slice(0, 10);
+        showAll.classList.remove('d-none')
+    }
+    else{
+        showAll.classList.add('d-none')
+    }
+   
 
     const noPhone = document.getElementById('no-found-message');
     if(phones.length === 0){
@@ -26,6 +35,7 @@ const displayPhones = phones => {
                 <div class="card-body">
                     <h5 class="card-title">${phone.phone_name}</h5>
                     <p class="card-text">This is a longer card with supporting text below as a natural lead-in to additional content. This content is a little bit longer.</p>
+                    <button onclick="loadPhoneDetails('${phone.slug}')" href="#" class="btn btn-primary" data-bs-toggle="modal" data-bs-target="#phoneDetailModal">Show Details</button>
                 </div>
             </div>
         `;
@@ -33,13 +43,25 @@ const displayPhones = phones => {
     });
     toggleSpinner(false)
 }
-
-document.getElementById('btn-search').addEventListener('click', function(){
-    // start loader
+ 
+const processSearch = (datalimit) => {
     toggleSpinner(true)
     const searchField = document.getElementById('search-field');
     const searchText = searchField.value;
-    loadPhones(searchText);
+    loadPhones(searchText, datalimit);
+}
+
+// set key enter press element id
+
+document.getElementById('search-field').addEventListener('keypress', function (e) {
+    if (e.key === 'Enter') {
+      processSearch(10)
+    }
+});
+
+document.getElementById('btn-search').addEventListener('click', function(){
+    // start loader
+    processSearch(10)
 })
 
 const toggleSpinner = isLoading => {
@@ -50,3 +72,30 @@ const toggleSpinner = isLoading => {
         loaderSection.classList.add('d-none')
     }
 }
+
+// not the best way show all load Data
+
+document.getElementById('btn-show-all').addEventListener('click', function(){
+    processSearch();
+});
+
+const loadPhoneDetails =async id => {
+    const url = `https://openapi.programming-hero.com/api/phone/${id}`;
+    const res =await fetch(url)
+    const data =await res.json()
+    displayPhoneDetails(data.data);
+};
+
+const displayPhoneDetails = phone => {
+    console.log(phone);
+    const modalTitel = document.getElementById('phoneDetailModalLabel');
+    modalTitel.innerText = phone.name;
+    const phoneDetails = document.getElementById('phone-details');
+    phoneDetails.innerHTML = `
+        <p>Release Date: ${phone.releaseDate ? phone.releaseDate : 'No Release Date Found'}</p>
+        <p>${phone.mainFeatures ? phone.mainFeatures.storage: 'No Storage Information'}</p>
+        <p>Others: ${phone.others ? phone.others.Bluetooth : 'No Bluetooth Information'}</p>
+    `;
+};
+
+loadPhones('apple')
